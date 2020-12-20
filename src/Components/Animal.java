@@ -10,14 +10,14 @@ public class Animal implements IPositionChangeObserver {
     private MapDirection orientation;
     private Vector2d position;
     private final IWorldMap map;
-    private List<IPositionChangeObserver> observers = new ArrayList<>();
+    private final List<IPositionChangeObserver> observers = new ArrayList<>();
 
-    private int bornEpoch;
+    private final int bornEpoch;
     private int energy;
     private ArrayList<Animal> children = new ArrayList<>();
     private short[] genotype = new short[32];
 
-    private Boolean copulationProduct = false;
+    private final Boolean copulationProduct;
 
     public Animal(IWorldMap map, Vector2d initialPosition, int energy, int bornEpoch, boolean copulationProduct){
         this.energy = energy;
@@ -31,49 +31,30 @@ public class Animal implements IPositionChangeObserver {
     }
 
     public String toString(){
-        switch(this.orientation){
-            case NORTH:
-                return "N";
-            case NORTHEAST:
-                return "NE";
-            case NORTHWEST:
-                return "NW";
-            case SOUTH:
-                return "S";
-            case SOUTHEAST:
-                return "SE";
-            case SOUTHWEST:
-                return "SW";
-            case EAST:
-                return "E";
-            case WEST:
-                return "W";
-            default:
-                return null;
-        }
+        return switch (this.orientation) {
+            case NORTH -> "N";
+            case NORTHEAST -> "NE";
+            case NORTHWEST -> "NW";
+            case SOUTH -> "S";
+            case SOUTHEAST -> "SE";
+            case SOUTHWEST -> "SW";
+            case EAST -> "E";
+            case WEST -> "W";
+        };
     }
 
     public MapDirection numberToDirection(int number) {
-        switch(number) {
-            case 0:
-                return MapDirection.NORTH;
-            case 1:
-                return MapDirection.NORTHEAST;
-            case 2:
-                return MapDirection.EAST;
-            case 3:
-                return MapDirection.SOUTHEAST;
-            case 4:
-                return MapDirection.SOUTH;
-            case 5:
-                return MapDirection.SOUTHWEST;
-            case 6:
-                return MapDirection.WEST;
-            case 7:
-                return MapDirection.NORTHWEST;
-            default:
-                return null;
-        }
+        return switch (number) {
+            case 0 -> MapDirection.NORTH;
+            case 1 -> MapDirection.NORTHEAST;
+            case 2 -> MapDirection.EAST;
+            case 3 -> MapDirection.SOUTHEAST;
+            case 4 -> MapDirection.SOUTH;
+            case 5 -> MapDirection.SOUTHWEST;
+            case 6 -> MapDirection.WEST;
+            case 7 -> MapDirection.NORTHWEST;
+            default -> null;
+        };
     }
 
     public void move(){
@@ -128,9 +109,9 @@ public class Animal implements IPositionChangeObserver {
     public int getEnergy() {return this.energy; }
     public short[] getGenotype() {return this.genotype;}
     public String getStringGenotype() {
-        String tmp = "";
-        for(int i=0; i<32; i++) tmp += Short.toString(this.genotype[i]);
-        return tmp;
+        StringBuilder tmp = new StringBuilder();
+        for(int i=0; i<32; i++) tmp.append(this.genotype[i]);
+        return tmp.toString();
     }
     public int getBornEpoch() {return bornEpoch;}
     public ArrayList<Animal> getChildren() {return this.children;}

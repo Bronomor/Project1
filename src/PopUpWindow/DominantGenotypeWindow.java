@@ -17,12 +17,12 @@ public class DominantGenotypeWindow {
 
     public void start(ArrayList<Animal> result){
         Stage stage = new Stage();
-        ListView<String> list = new ListView<String>();
+        ListView<String> list = new ListView<>();
         ObservableList<String> items = FXCollections.observableArrayList ();
         for(Animal animal : result) items.add(animal.getPosition() + " " + animal + " " + animal.getStringGenotype());
 
         list.setItems(items);
-        Scene scene = new Scene(list, 600, 400);
+        Scene scene = new Scene(list, WINDOW_WIDTH, WINDOW_HEIGHT);
         stage.setTitle("Animal preferences");
         stage.setScene(scene);
         stage.show();

@@ -2,7 +2,7 @@ package Components;
 
 public class Grass {
 
-    private Vector2d Grassposition;
+    private final Vector2d Grassposition;
 
     public Grass(Vector2d vector2d){
         this.Grassposition = vector2d;

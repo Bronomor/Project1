@@ -10,9 +10,7 @@ import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Pos;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -20,7 +18,6 @@ import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.HBox;
@@ -34,8 +31,8 @@ import javafx.util.Duration;
 import Components.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Random;
 
 public class SingleWorld {
@@ -45,19 +42,20 @@ public class SingleWorld {
     private IEngine engine;
     private IWorldMap grassField;
     private final MapParameters mapParameters;
-    private Vector2d mapScale;
+    private final Vector2d mapScale;
     private final Timeline timeline = new Timeline();
     private int actualEpoch = 0;
 
     Stage window;
     private final HBox chartLayout = new HBox();
-    private final Group mapLayout  = new Group();
+    private final VBox mapLayout  = new VBox();
+
+    private ObservableList<XYChart.Series> seriesList = FXCollections.observableArrayList();
     private final ObservableList<XYChart.Data> grassChartList = FXCollections.observableArrayList();
     private final ObservableList<XYChart.Data> animalsChartList = FXCollections.observableArrayList();
-    private LineChart populationChart;
 
     Button stopStartSimulationButton = new Button("Start Simulation");
-    Text whoseEpochText              = new Text("Actual Epoch: 0");
+    Text actualEpochText              = new Text("Actual Epoch: 0");
     Text allAnimalsText              = new Text("Animals: 0");
     Text allPlantText                = new Text("Grass: 0");
     Text dominantGenotypeText        = new Text("Dominujący Genotyp: ");
@@ -66,7 +64,7 @@ public class SingleWorld {
     Text averageChildrenText         = new Text("Average Children for Animal");
     Button dominantGenotypeAnimalsButton   = new Button("Get animals with dominant genotype");
     TextField saveStatisticNTextView = new TextField();
-    Button saveStatisticButton      = new Button("Get animals with dominant genotype");
+    Button saveStatisticButton      = new Button("Save statistic to file");
 
     public SingleWorld(MapParameters mapParameters){
         this.mapParameters = mapParameters;
@@ -74,12 +72,10 @@ public class SingleWorld {
         mapScale = new Vector2d((int) Math.round((double) (WINDOW_WIDTH-600) / mapParameters.getMapWidth()),(int) Math.round((double) WINDOW_HEIGHT/ mapParameters.getMapHeight()));
     }
 
-    public void start() throws Exception {
+    public void start() {
         window = new Stage();
         window.setTitle("Darvin World");
         window.setScene(prepareLayouts());
-        window.setMaxWidth(WINDOW_WIDTH);
-        window.setMaxHeight(WINDOW_HEIGHT);
         window.show();
 
         prepareEngine();
@@ -100,32 +96,30 @@ public class SingleWorld {
             else positions.add(pos);
         }
 
-        Vector2d[][] biomesRestriction = new Vector2d[2][4];
-        biomesRestriction[0][0] = mapParameters.getMapLower();
-        biomesRestriction[0][1] = mapParameters.getMapHigher();
-        biomesRestriction[0][2] = mapParameters.getJungleLower();
-        biomesRestriction[0][3] = mapParameters.getJungleHigher();
+        Vector2d[][] biomesParameters = new Vector2d[2][4];
+        biomesParameters[0][0] = mapParameters.getMapLower();
+        biomesParameters[0][1] = mapParameters.getMapHigher();
+        biomesParameters[0][2] = mapParameters.getJungleLower();
+        biomesParameters[0][3] = mapParameters.getJungleHigher();
 
-        biomesRestriction[1][0] = mapParameters.getJungleLower();
-        biomesRestriction[1][1] = mapParameters.getJungleHigher();
-        biomesRestriction[1][2] = null;
-        biomesRestriction[1][3] = null;
+        biomesParameters[1][0] = mapParameters.getJungleLower();
+        biomesParameters[1][1] = mapParameters.getJungleHigher();
+        biomesParameters[1][2] = null;
+        biomesParameters[1][3] = null;
 
-        engine = new SimulationEngine(grassField, positions, mapParameters, biomesRestriction);
+        engine = new SimulationEngine(grassField, positions, mapParameters, biomesParameters);
     }
     private Scene prepareLayouts(){
         // Wykres
-        System.out.println(Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
-        chartLayout.setPrefHeight(WINDOW_HEIGHT/2);
+        chartLayout.setPrefHeight(WINDOW_HEIGHT >> 1);
         chartLayout.setPrefWidth(WINDOW_WIDTH-Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
-        chartLayout.setBackground(new Background(new BackgroundFill(Color.GRAY,null,null)));
+        chartLayout.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY,null,null)));
         chartLayout.setAlignment(Pos.CENTER);
 
-        ObservableList<XYChart.Series> seriesList = FXCollections.observableArrayList();
         seriesList.add(new XYChart.Series("Grass grown", grassChartList));
         seriesList.add(new XYChart.Series("Animals population", animalsChartList));
 
-        populationChart = new LineChart(new NumberAxis(), new NumberAxis(), seriesList);
+        LineChart populationChart = new LineChart(new NumberAxis(), new NumberAxis(), seriesList);
         populationChart.setCreateSymbols(false);
         populationChart.setAlternativeColumnFillVisible(false);
         populationChart.setAlternativeRowFillVisible(false);
@@ -136,21 +130,22 @@ public class SingleWorld {
 
         // lewa dolna strona aplikacji, menu podręczne
         VBox additionalLayout   = new VBox();
-        additionalLayout.setMinHeight(WINDOW_HEIGHT/2);
+        additionalLayout.setMinHeight(WINDOW_HEIGHT >> 1);
         additionalLayout.setPrefWidth(WINDOW_WIDTH-Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
         additionalLayout.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY,null,null)));
 
-        whoseEpochText.setFont(new Font(20));
-        whoseEpochText.setTextAlignment(TextAlignment.JUSTIFY);
+        actualEpochText.setFont(new Font(20));
+        actualEpochText.setTextAlignment(TextAlignment.JUSTIFY);
         saveStatisticNTextView.setPromptText("Print N value to get statistic");
         saveStatisticNTextView.setMaxWidth(200);
-        additionalLayout.getChildren().addAll(stopStartSimulationButton,whoseEpochText,allAnimalsText,allPlantText,dominantGenotypeText,averageEnergyText);
+        additionalLayout.getChildren().addAll(stopStartSimulationButton,actualEpochText,allAnimalsText,allPlantText,dominantGenotypeText,averageEnergyText);
         additionalLayout.getChildren().addAll(averageAnimalTimeText,averageChildrenText,dominantGenotypeAnimalsButton,saveStatisticNTextView,saveStatisticButton);
         additionalLayout.setSpacing(10);
         additionalLayout.setAlignment(Pos.BASELINE_CENTER);
 
         // dopasowanie mapy do prawej strony aplikacji
-        mapLayout.prefHeight(WINDOW_HEIGHT);
+        mapLayout.minHeight(WINDOW_HEIGHT);
+        mapLayout.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY,null,null)));
         mapLayout.prefWidth(Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
 
         return new Scene(new HBox(new VBox(chartLayout,additionalLayout),mapLayout),WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -158,25 +153,21 @@ public class SingleWorld {
     private void animation(){
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.getKeyFrames().add(new KeyFrame(
-                Duration.millis(5),
+                Duration.millis(20),
                 (ActionEvent event) -> {
-                    update(false,false);
+                    update(false);
                     display();
                 }
         ));
     }
     private void display(){
-        // aktualna epoka
-        whoseEpochText.setText("Actual Epoch: " + actualEpoch);
 
-        // aktualizowanie wykresu
+        actualEpochText.setText("Actual Epoch: " + actualEpoch);
+
+
         if(actualEpoch % 5000 == 0){
             animalsChartList.clear();
             grassChartList.clear();
-            ObservableList<XYChart.Series> seriesList = FXCollections.observableArrayList();
-            seriesList.add(new XYChart.Series("Grass grown", grassChartList));
-            seriesList.add(new XYChart.Series("Animals population", animalsChartList));
-            populationChart = new LineChart(new NumberAxis(), new NumberAxis());
         }
         animalsChartList.add(new XYChart.Data(actualEpoch % 5000, engine.getAnimalsAmount()));
         grassChartList.add(new XYChart.Data(actualEpoch % 5000, grassField.getGrass().size()));
@@ -187,7 +178,7 @@ public class SingleWorld {
         averageEnergyText.setText("Average Animals Energy: " + engine.getAverageAnimalEnergy());
         averageAnimalTimeText.setText("Average Animal life expectancy time " + engine.getAverageAnimalTime());
         averageChildrenText.setText("Average Children for Animal " + engine.getAverageAnimalChildren());
-        dominantGenotypeText.setText("Dominujący Genotyp: "+ engine.dominantGenotype());
+        dominantGenotypeText.setText("Dominant Genotype: "+ engine.dominantGenotype());
 
         // Tutaj rysuje to wszystko co dzieje się na mapie
         mapLayout.getChildren().clear();
@@ -230,91 +221,89 @@ public class SingleWorld {
         }
         mapLayout.getChildren().add(canvas);
     }
-    private void update(boolean keepChildren, boolean allEpoch){
+    private void update(boolean allEpoch){
         actualEpoch +=1;
-        engine.run(actualEpoch,keepChildren,allEpoch);
+        engine.run(actualEpoch, false,allEpoch);
     }
     private void events(){
-        stopStartSimulationButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                if(stopStartSimulationButton.getText().equals("Start Simulation")){
-                    mapLayout.setDisable(true);
-                    dominantGenotypeAnimalsButton.setDisable(true);
-                    saveStatisticButton.setDisable(true);
-                    timeline.play();
-                    stopStartSimulationButton.setText("Stop Simulation");
-                }
-                else {
-                    timeline.stop();
-                    mapLayout.setDisable(false);
-                    dominantGenotypeAnimalsButton.setDisable(false);
-                    saveStatisticButton.setDisable(false);
-                    stopStartSimulationButton.setText("Start Simulation");
-                }
+        stopStartSimulationButton.setOnAction(actionEvent -> {
+            if(stopStartSimulationButton.getText().equals("Start Simulation")){
+                mapLayout.setDisable(true);
+                dominantGenotypeAnimalsButton.setDisable(true);
+                saveStatisticButton.setDisable(true);
+                timeline.play();
+                stopStartSimulationButton.setText("Stop Simulation");
+            }
+            else {
+                timeline.stop();
+                mapLayout.setDisable(false);
+                dominantGenotypeAnimalsButton.setDisable(false);
+                saveStatisticButton.setDisable(false);
+                stopStartSimulationButton.setText("Start Simulation");
+            }
 
-            }
         });
-        mapLayout.setOnMouseClicked(new EventHandler<MouseEvent>() {
-            @Override
-            public void handle(MouseEvent mouseEvent) {
-                if(mouseEvent.getButton() == MouseButton.PRIMARY){
-                    Vector2d position = new Vector2d((int) Math.floor(mouseEvent.getX() / mapScale.x),(int) Math.floor(mouseEvent.getSceneY()/ mapScale.y));
-                    ArrayList<Animal> animal = grassField.getAnimals().get(position);
-                    if(animal != null && animal.size() > 0){
-                        animalShow(animal.get(0));
-                    }
-                    else{
-                        System.out.println("Nie wybrano zwierzęcia");
-                    }
+        mapLayout.setOnMouseClicked(mouseEvent -> {
+            if(mouseEvent.getButton() == MouseButton.PRIMARY){
+                Vector2d position = new Vector2d((int) Math.floor(mouseEvent.getX() / mapScale.x),(int) Math.floor(mouseEvent.getSceneY()/ mapScale.y));
+                ArrayList<Animal> animal = grassField.getAnimals().get(position);
+                if(animal != null && animal.size() > 0){
+                    animalShow(animal.get(0));
+                }
+                else{
+                    System.out.println("Nie wybrano zwierzęcia");
                 }
             }
         });
-        dominantGenotypeAnimalsButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                allDominantGenotypeShow();
+        dominantGenotypeAnimalsButton.setOnAction(actionEvent -> allDominantGenotypeShow());
+        saveStatisticButton.setOnAction(actionEvent -> {
+            try {
+                writeStatisticToFile();
+                display();
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid Number");
             }
         });
-        saveStatisticButton.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                try {
-                    int animalsAllEpoch = 0;
-                    int grassAllEpoch = 0;
-                    int energyAllEpoch = 0;
-                    int deadAnimal = 0;
-                    int deadAnimalLife = 0;
-                    int allChildren = 0;
-                    int N = Integer.parseInt(saveStatisticNTextView.getText());
-                    String dominantGenotype = "";
-                    if(N>0) {
-                        for (int i = 0; i < N; i++) {
-                            update(false,true);
-                            animalsAllEpoch += engine.getAnimalsAmount();
-                            grassAllEpoch += grassField.getGrass().size();
-                            energyAllEpoch += engine.getTotalAnimalEnergy();
-                            deadAnimal += engine.getDeadAnimalAmount();
-                            deadAnimalLife += engine.getDeadAnimalTime();
-                            allChildren = engine.getTotalChildren();
-                            dominantGenotype = engine.dominantGenotype();
-                        }
-                    }
-                    try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("statistic.txt"), "utf-8"))) {
-                        writer.write(Integer.toString(animalsAllEpoch/N)+"\n");
-                        writer.write(Integer.toString(grassAllEpoch/N)+"\n");
-                        writer.write(Integer.toString(energyAllEpoch/animalsAllEpoch)+"\n");
-                        writer.write(Double.toString((double) deadAnimal/deadAnimalLife)+"\n");
-                        writer.write(Double.toString((double) allChildren/animalsAllEpoch)+"\n");
-                        writer.write(dominantGenotype);
-                    }catch (IOException e){
-                        e.printStackTrace();
-                    }
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid Number");
-                }
+    }
+
+    private void writeStatisticToFile(){
+        int animalsAllEpoch = 0;
+        int grassAllEpoch = 0;
+        int energyAllEpoch = 0;
+        int deadAnimal = 0;
+        int deadAnimalLife = 0;
+        int allChildren = 0;
+        int N = Integer.parseInt(saveStatisticNTextView.getText());
+        String dominantGenotype = "";
+        engine.clearDominantGenotype();
+        if(N>0) {
+            for (int i = 0; i < N; i++) {
+                update(true);
+                animalsAllEpoch += engine.getAnimalsAmount();
+                grassAllEpoch += grassField.getGrass().size();
+                energyAllEpoch += engine.getTotalAnimalEnergy();
+                deadAnimal += engine.getDeadAnimalAmount();
+                deadAnimalLife += engine.getDeadAnimalTime();
+                allChildren = engine.getTotalChildren();
+                dominantGenotype = engine.dominantGenotype();
             }
-        });
+        }
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("statistic.txt"), StandardCharsets.UTF_8))) {
+            writer.write("Average animals amount: ");
+            writer.write(animalsAllEpoch / N +"\n");
+            writer.write("Average grass amount: ");
+            writer.write(grassAllEpoch / N +"\n");
+            writer.write("Average animals energy: ");
+            writer.write((animalsAllEpoch > 0 ? energyAllEpoch / animalsAllEpoch : 0) +"\n");
+            writer.write("Average dead animal life: ");
+            writer.write((deadAnimalLife > 0 ? (double) deadAnimal / deadAnimalLife : 0) +"\n");
+            writer.write("Average animal children: ");
+            writer.write((animalsAllEpoch > 0 ? (double) allChildren / animalsAllEpoch : 0) +"\n");
+            writer.write("Dominant genotype: ");
+            writer.write(dominantGenotype);
+        }catch (IOException e){
+            e.printStackTrace();
+        }
     }
 
     private void animalShow(Animal animal){

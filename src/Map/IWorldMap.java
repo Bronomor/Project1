@@ -16,7 +16,7 @@ import java.util.Map;
  */
 public interface IWorldMap {
 
-    boolean place(Animal animal);
+    void place(Animal animal);
 
     /**
      * Return true if given position on the map is occupied. Should not be
@@ -29,22 +29,12 @@ public interface IWorldMap {
      */
     boolean isOccupied(Vector2d position);
 
-    /**
-     * Return an object at a given position.
-     *
-     * @param position
-     *            The position of the object.
-     * @return Object or null if the position is not occupied.
-     */
-    Object objectAt(Vector2d position);
-
     Vector2d AdjustingPositionToMap(Vector2d position);
-
 
     Map<Vector2d, Grass> getGrass();
     Map<Vector2d, ArrayList<Animal>> getAnimals();
 
-    void eatGrass(Vector2d position, int grassEnergy);
+    void giveGrassAnimal(Vector2d position, int grassEnergy);
     void addGrass(Vector2d position);
     void removeGrass(Vector2d position);
 }

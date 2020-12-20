@@ -1,7 +1,5 @@
 package PopUpWindow;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -21,9 +19,9 @@ public class AnimalWindow {
     static final int WINDOW_WIDTH = 600;
     static final int WINDOW_HEIGHT = 400;
 
-    private Animal animal;
-    private IEngine engine;
-    private IWorldMap grassField;
+    private final Animal animal;
+    private final IEngine engine;
+    private final IWorldMap grassField;
     private int actualEpoch;
     private boolean undead = true;
 
@@ -57,15 +55,20 @@ public class AnimalWindow {
     private VBox prepareLayout(String genotypeString){
         concreteAnimalPosition = new Text("Animal position: " + animal.getPosition());
         concreteAnimalOrient = new Text("Animal orientation: " + animal);
-        nValueText = new Text("Are you want to see a animal after N epoch? ");
+        ConcreteAnimalGenotype = new Text("Animal orientation: " + genotypeString + "\n\n");
+
+        nValueText = new Text("Are you want to see the animal after N epoch? ");
         nValue = new Text("If you like, please enter N below: ");
-        childrenText =  new Text("Amount of animal children");
-        descendantText =  new Text("Amount of animal descendant");
-        deadEpochText = new Text("Animal death Epoch ");
         nTextField = new TextField();
         nTextField.setMaxWidth(200);
         startSimulation = new Button("See animal after N epoch");
-        ConcreteAnimalGenotype = new Text("Animal orientation: " + genotypeString);
+
+        childrenText =  new Text("Amount of animal children");
+        childrenText.setVisible(false);
+        descendantText =  new Text("Amount of animal descendant");
+        descendantText.setVisible(false);
+        deadEpochText = new Text("Animal death Epoch ");
+        deadEpochText.setVisible(false);
 
         VBox components = new VBox(concreteAnimalPosition,concreteAnimalOrient,ConcreteAnimalGenotype,nValueText,nValue,nTextField,startSimulation,childrenText,descendantText,deadEpochText);
         components.setAlignment(Pos.CENTER);
@@ -83,36 +86,37 @@ public class AnimalWindow {
         }
     }
     private void events(){
-        startSimulation.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent actionEvent) {
-                try {
-                    int N = Integer.parseInt(nTextField.getText());
+        startSimulation.setOnAction(actionEvent -> {
+            childrenText.setVisible(true);
+            descendantText.setVisible(true);
+            deadEpochText.setVisible(true);
 
-                    //resetowanie dzieci, zaczynamy od 0
-                    for(ArrayList<Animal> animalList : grassField.getAnimals().values()){
-                        for(int i=0; i<animalList.size(); i++){
-                            animalList.get(i).resetChildren();
-                        }
+            try {
+                int N = Integer.parseInt(nTextField.getText());
+
+                // symuacje zaczynamy od pustej liczby dzieci
+                for(ArrayList<Animal> animalList : grassField.getAnimals().values()){
+                    for (Animal value : animalList) {
+                        value.resetChildren();
                     }
-
-                    //symulacja n epok
-                    for(int i=0; i<N; i++){
-                        actualEpoch+=1;
-                        engine.run(actualEpoch,true,false);
-                        if(animal.getEnergy() <= 0 && undead) {
-                            undead = false;
-                            deadEpochText.setText("Animal death Epoch: " + actualEpoch);
-                        }
-                    }
-
-                    HashSet<Animal> descendant = new HashSet<>();
-                    countDescendant(animal,descendant);
-                    childrenText.setText("Amount of animal children: " + animal.getChildren().size());
-                    descendantText.setText("Amount of animal descendant: " + descendant.size());
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid Number");
                 }
+
+                //symulacja n epok
+                for(int i=0; i<N; i++){
+                    actualEpoch+=1;
+                    engine.run(actualEpoch,true,false);
+                    if(animal.getEnergy() <= 0 && undead) {
+                        undead = false;
+                        deadEpochText.setText("Animal death Epoch: " + actualEpoch);
+                    }
+                }
+
+                HashSet<Animal> descendant = new HashSet<>();
+                countDescendant(animal,descendant);
+                childrenText.setText("Amount of animal children: " + animal.getChildren().size());
+                descendantText.setText("Amount of animal descendant: " + descendant.size());
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid Number");
             }
         });
     }

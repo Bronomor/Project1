@@ -7,16 +7,13 @@ public class MapParameters {
     private final int worldHeight;
     private final Vector2d worldLower;
     private final Vector2d worldHigher;
-    private final int mapAvailablePositions;
 
     private final int jungleHeight;
     private final int jungleWidth;
     private final Vector2d jungleLower;
     private final Vector2d jungleHigher;
-    private final int jungleAvailablePositions;
 
     private final int animalsAmount;
-
     private final int startEnergy;
     private final int moveEnergy;
     private final int plantEnergy;
@@ -30,14 +27,12 @@ public class MapParameters {
         worldHeight = Parameters[1];
         worldLower = new Vector2d(0,0);
         worldHigher = new Vector2d(worldWidth-1,worldHeight-1);
-        mapAvailablePositions = (worldHigher.x-worldLower.x+1)*(worldHigher.y-worldLower.y+1);
 
         int jungleRatio = Parameters[2];
         jungleWidth = Math.round(worldWidth / jungleRatio);
         jungleHeight = Math.round(worldHeight / jungleRatio);
-        jungleLower  = new Vector2d(Math.round((worldWidth-jungleWidth) / 2),Math.round((worldHeight-jungleHeight) / 2));
+        jungleLower  = new Vector2d(Math.round((worldWidth - jungleWidth) >> 1),Math.round((worldHeight - jungleHeight) >> 1));
         jungleHigher = new Vector2d(Math.round(jungleLower.x+jungleWidth-1),Math.round(jungleLower.y+jungleHeight-1));
-        jungleAvailablePositions = (jungleWidth)*(jungleHeight);
 
         animalsAmount = Parameters[3];
         startEnergy = Parameters[4];
@@ -54,7 +49,6 @@ public class MapParameters {
     }
     public Vector2d getMapLower() { return this.worldLower;}
     public Vector2d getMapHigher() { return this.worldHigher;}
-    public int getMapAvailablePositions() {return this.mapAvailablePositions; }
 
     public int getJungleWidth(){
         return this.jungleWidth;
@@ -66,7 +60,6 @@ public class MapParameters {
     public Vector2d getJungleHigher(){
         return this.jungleHigher;
     }
-    public int getJungleAvailablePositions() {return this.jungleAvailablePositions; }
 
     public int getStartEnergy() {return startEnergy;}
     public int getAnimalsAmount() {return animalsAmount;}

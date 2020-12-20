@@ -16,9 +16,10 @@ public interface IEngine {
      */
     void run(int ActualEpoch, boolean keepChildren, boolean allEpoch);
 
+    void clearDominantGenotype();
     int getAnimalsAmount();
     int getAverageAnimalEnergy();
-    double getAverageAnimalTime();
+    int getAverageAnimalTime();
     double getAverageAnimalChildren();
     String dominantGenotype();
     int getTotalAnimalEnergy();
