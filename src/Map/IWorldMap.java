@@ -41,15 +41,10 @@ public interface IWorldMap {
     Vector2d AdjustingPositionToMap(Vector2d position);
 
 
-    Map<Vector2d, Grass> getJungleGrass();
-    Map<Vector2d,Grass> getStepGrass();
-
+    Map<Vector2d, Grass> getGrass();
     Map<Vector2d, ArrayList<Animal>> getAnimals();
 
-    void addJungleGrass(int GrassCount);
-    void addStepGrass(int GrassCount);
-
     void eatGrass(Vector2d position, int grassEnergy);
-
+    void addGrass(Vector2d position);
     void removeGrass(Vector2d position);
 }

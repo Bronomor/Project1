@@ -10,24 +10,16 @@ import MapParameters.MapParameters;
 
 public class GrassField implements IWorldMap, IPositionChangeObserver {
 
-    protected HashMap<Vector2d, Grass> jungleGrass          = new HashMap<>();
-    protected HashMap<Vector2d,Grass> stepGrass             = new HashMap<>();
-    protected HashMap<Vector2d, ArrayList<Animal>>  animals = new HashMap<>();
+    private HashMap<Vector2d, Grass> grass = new HashMap<>();
+    private HashMap<Vector2d, ArrayList<Animal>>  animals = new HashMap<>();
 
-    private final Vector2d jungleLower;
-    private final Vector2d jungleHigher;
     private final Vector2d mapLower;
     private final Vector2d mapHigher;
-    private final int mapAvailablePositions;
-    private final int jungleAvailablePositions;
 
     public GrassField(MapParameters mapParameters) {
-        jungleLower = mapParameters.getJungleLower();
-        jungleHigher = mapParameters.getJungleHigher();
         mapLower = mapParameters.getMapLower();
         mapHigher = mapParameters.getMapHigher();
-        mapAvailablePositions = mapParameters.getMapAvailablePositions();
-        jungleAvailablePositions = mapParameters.getJungleAvailablePositions();
+
     }
 
     public boolean place(Animal animal) {
@@ -39,8 +31,7 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         if(animals.containsKey(position)){
             if(animals.get(position).size() > 0) return true;
         }
-        if(stepGrass.containsKey(position)) return true;
-        else return jungleGrass.containsKey(position);
+        return grass.containsKey(position);
     }
 
     public Vector2d AdjustingPositionToMap(Vector2d position){
@@ -54,10 +45,12 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
         return position;
     }
 
+
     public Object objectAt(Vector2d position) {
-        if(animals.get(position) != null) return animals.get(position);
-        if(jungleGrass.get(position) != null) return jungleGrass.get(position);
-        if(stepGrass.get(position) != null) return stepGrass.get(position);
+        if(animals.containsKey(position)){
+            if(animals.get(position).size() > 0) return animals.get(position).get(0);
+        }
+        if(grass.get(position) != null) return grass.get(position);
         return null;
     }
 
@@ -85,78 +78,11 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
 
     }
 
-    public Map<Vector2d,Grass> getJungleGrass(){
-        return jungleGrass;
-    }
-
-    public Map<Vector2d,Grass> getStepGrass(){
-        return stepGrass;
-    }
-
+    public Map<Vector2d, Grass> getGrass() { return grass; }
     public Map<Vector2d, ArrayList<Animal>> getAnimals(){
         return animals;
     }
 
-    public void addStepGrass(int GrassCount){
-        Random r = new Random();
-        if(stepGrass.size() >= mapAvailablePositions-jungleAvailablePositions) return;
-
-        int ForeverLotsLops = 0;
-        for (int i=0; i<GrassCount; i++){
-            Vector2d pos = new Vector2d(r.nextInt(mapHigher.x-mapLower.x+1)+mapLower.x,r.nextInt(mapHigher.y-mapLower.y+1)+mapLower.y);
-            if(ForeverLotsLops > 10){
-                for(int x=mapLower.x; x<mapHigher.x+1; x++){
-                    for(int y=mapLower.y; y<mapHigher.y+1; y++){
-                        pos = new Vector2d(x,y);
-                        if(!isOccupied(pos) && !(pos.precedes(jungleHigher) && pos.follows(jungleLower))) {
-                            stepGrass.put(pos,new Grass(pos));
-                            return;
-                        }
-                    }
-                }
-            }
-            else if(!isOccupied(pos) && !(pos.precedes(jungleHigher) && pos.follows(jungleLower))) {
-                stepGrass.put(pos,new Grass(pos));
-                ForeverLotsLops = 0;
-            }
-            else {
-                ForeverLotsLops += 1;
-                i -= 1;
-            }
-        }
-    }
-
-    public void addJungleGrass(int GrassCount){
-        Random r = new Random();
-        if(jungleGrass.size() >= jungleAvailablePositions) return;
-        int ForeverLotsLops = 0;
-
-        for (int i=0; i<GrassCount; i++){
-            Vector2d pos = new Vector2d(r.nextInt(jungleHigher.x-jungleLower.x+1) + jungleLower.x,r.nextInt(jungleHigher.y-jungleLower.y+1) + jungleLower.y);
-
-            if (ForeverLotsLops <= 10) {
-                if(!isOccupied(pos)) {
-                    jungleGrass.put(pos, new Grass(pos));
-                    ForeverLotsLops = 0;
-                }
-                else {
-                    ForeverLotsLops += 1;
-                    i -= 1;
-                }
-            }
-            else {
-                for(int x=jungleLower.x; x<jungleHigher.x+1; x++){
-                    for(int y=jungleLower.y; y<jungleHigher.y+1; y++){
-                        pos = new Vector2d(x,y);
-                        if(!jungleGrass.containsKey(pos)) {
-                            jungleGrass.put(pos,new Grass(pos));
-                            return;
-                        }
-                    }
-                }
-            }
-        }
-    }
     public void eatGrass(Vector2d pos,int grassEnergy){
         ArrayList<Animal> animalsList = animals.get(pos);
         int MaxEnergy = animalsList.get(0).getEnergy();
@@ -167,8 +93,10 @@ public class GrassField implements IWorldMap, IPositionChangeObserver {
             animals.get(pos).get(idx).addEnergy(grassEnergy/i);
         }
     }
+    public void addGrass(Vector2d pos){
+        grass.put(pos,new Grass(pos));
+    }
     public void removeGrass(Vector2d pos){
-        if(jungleGrass.containsKey(pos)) jungleGrass.remove(pos);
-        else stepGrass.remove(pos);
+        grass.remove(pos);
     }
 }

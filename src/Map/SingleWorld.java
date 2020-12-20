@@ -45,10 +45,11 @@ public class SingleWorld {
     private IEngine engine;
     private IWorldMap grassField;
     private final MapParameters mapParameters;
-    private final Vector2d mapScale;
+    private Vector2d mapScale;
     private final Timeline timeline = new Timeline();
     private int actualEpoch = 0;
 
+    Stage window;
     private final HBox chartLayout = new HBox();
     private final Group mapLayout  = new Group();
     private final ObservableList<XYChart.Data> grassChartList = FXCollections.observableArrayList();
@@ -70,14 +71,15 @@ public class SingleWorld {
     public SingleWorld(MapParameters mapParameters){
         this.mapParameters = mapParameters;
         //Wyliczanie skali mapy
-        mapScale = new Vector2d((int) Math.round((double) WINDOW_WIDTH / mapParameters.getMapWidth()/2),(int) Math.round((double) WINDOW_HEIGHT/ mapParameters.getMapHeight()));
+        mapScale = new Vector2d((int) Math.round((double) (WINDOW_WIDTH-600) / mapParameters.getMapWidth()),(int) Math.round((double) WINDOW_HEIGHT/ mapParameters.getMapHeight()));
     }
 
     public void start() throws Exception {
-        Stage window;
         window = new Stage();
         window.setTitle("Darvin World");
-        window.setScene(PrepareLayouts());
+        window.setScene(prepareLayouts());
+        window.setMaxWidth(WINDOW_WIDTH);
+        window.setMaxHeight(WINDOW_HEIGHT);
         window.show();
 
         prepareEngine();
@@ -97,12 +99,25 @@ public class SingleWorld {
             if(positions.contains(pos)) i-=1;
             else positions.add(pos);
         }
-        engine = new SimulationEngine(grassField, positions, mapParameters);
+
+        Vector2d[][] biomesRestriction = new Vector2d[2][4];
+        biomesRestriction[0][0] = mapParameters.getMapLower();
+        biomesRestriction[0][1] = mapParameters.getMapHigher();
+        biomesRestriction[0][2] = mapParameters.getJungleLower();
+        biomesRestriction[0][3] = mapParameters.getJungleHigher();
+
+        biomesRestriction[1][0] = mapParameters.getJungleLower();
+        biomesRestriction[1][1] = mapParameters.getJungleHigher();
+        biomesRestriction[1][2] = null;
+        biomesRestriction[1][3] = null;
+
+        engine = new SimulationEngine(grassField, positions, mapParameters, biomesRestriction);
     }
-    private Scene PrepareLayouts(){
+    private Scene prepareLayouts(){
         // Wykres
+        System.out.println(Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
         chartLayout.setPrefHeight(WINDOW_HEIGHT/2);
-        chartLayout.setPrefWidth(WINDOW_WIDTH/2);
+        chartLayout.setPrefWidth(WINDOW_WIDTH-Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
         chartLayout.setBackground(new Background(new BackgroundFill(Color.GRAY,null,null)));
         chartLayout.setAlignment(Pos.CENTER);
 
@@ -122,7 +137,7 @@ public class SingleWorld {
         // lewa dolna strona aplikacji, menu podręczne
         VBox additionalLayout   = new VBox();
         additionalLayout.setMinHeight(WINDOW_HEIGHT/2);
-        additionalLayout.setMinWidth(WINDOW_WIDTH/2);
+        additionalLayout.setPrefWidth(WINDOW_WIDTH-Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
         additionalLayout.setBackground(new Background(new BackgroundFill(Color.LIGHTGRAY,null,null)));
 
         whoseEpochText.setFont(new Font(20));
@@ -135,8 +150,8 @@ public class SingleWorld {
         additionalLayout.setAlignment(Pos.BASELINE_CENTER);
 
         // dopasowanie mapy do prawej strony aplikacji
-        mapLayout.minHeight(WINDOW_HEIGHT);
-        mapLayout.minWidth(WINDOW_WIDTH/2);
+        mapLayout.prefHeight(WINDOW_HEIGHT);
+        mapLayout.prefWidth(Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)));
 
         return new Scene(new HBox(new VBox(chartLayout,additionalLayout),mapLayout),WINDOW_WIDTH, WINDOW_HEIGHT);
     }
@@ -164,11 +179,11 @@ public class SingleWorld {
             populationChart = new LineChart(new NumberAxis(), new NumberAxis());
         }
         animalsChartList.add(new XYChart.Data(actualEpoch % 5000, engine.getAnimalsAmount()));
-        grassChartList.add(new XYChart.Data(actualEpoch % 5000, grassField.getStepGrass().size() + grassField.getJungleGrass().size()));
+        grassChartList.add(new XYChart.Data(actualEpoch % 5000, grassField.getGrass().size()));
 
         //aktualizowanie statystyk
         allAnimalsText.setText("Animals: " + engine.getAnimalsAmount());
-        allPlantText.setText("Grass: " + (grassField.getJungleGrass().size()+grassField.getStepGrass().size()));
+        allPlantText.setText("Grass: " + (grassField.getGrass().size()));
         averageEnergyText.setText("Average Animals Energy: " + engine.getAverageAnimalEnergy());
         averageAnimalTimeText.setText("Average Animal life expectancy time " + engine.getAverageAnimalTime());
         averageChildrenText.setText("Average Children for Animal " + engine.getAverageAnimalChildren());
@@ -177,8 +192,7 @@ public class SingleWorld {
         // Tutaj rysuje to wszystko co dzieje się na mapie
         mapLayout.getChildren().clear();
 
-        Canvas canvas = new Canvas(WINDOW_WIDTH/2,WINDOW_HEIGHT);
-
+        Canvas canvas = new Canvas(Math.ceil(mapScale.x*(mapParameters.getMapHigher().x-mapParameters.getMapLower().x+1)),WINDOW_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
 
         gc.setFill(Color.BLUE);
@@ -193,11 +207,8 @@ public class SingleWorld {
         gc.fillRect(mapParameters.getJungleLower().x*mapScale.x, mapParameters.getJungleLower().y*mapScale.y, mapParameters.getJungleWidth()*mapScale.x, mapParameters.getJungleHeight()*mapScale.y);
 
         gc.setFill(Color.rgb(43, 122, 16));
-        for(Grass grass : grassField.getJungleGrass().values()) {
-            gc.fillRect(grass.getPosition().x * mapScale.x, grass.getPosition().y * mapScale.y, mapScale.x, mapScale.y);
-        }
 
-        for(Grass grass : grassField.getStepGrass().values()) {
+        for(Grass grass : grassField.getGrass().values()) {
             gc.fillRect(grass.getPosition().x * mapScale.x, grass.getPosition().y * mapScale.y, mapScale.x, mapScale.y);
         }
 
@@ -281,7 +292,7 @@ public class SingleWorld {
                         for (int i = 0; i < N; i++) {
                             update(false,true);
                             animalsAllEpoch += engine.getAnimalsAmount();
-                            grassAllEpoch += grassField.getJungleGrass().size() + grassField.getStepGrass().size();
+                            grassAllEpoch += grassField.getGrass().size();
                             energyAllEpoch += engine.getTotalAnimalEnergy();
                             deadAnimal += engine.getDeadAnimalAmount();
                             deadAnimalLife += engine.getDeadAnimalTime();

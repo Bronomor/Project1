@@ -1,6 +1,5 @@
 package Engine;
-
-import java.util.HashSet;
+import Map.Biomes;
 
 /**
  * The interface responsible for managing the moves of the animals.
@@ -16,6 +15,7 @@ public interface IEngine {
      *
      */
     void run(int ActualEpoch, boolean keepChildren, boolean allEpoch);
+
     int getAnimalsAmount();
     int getAverageAnimalEnergy();
     double getAverageAnimalTime();
@@ -25,5 +25,6 @@ public interface IEngine {
     int getDeadAnimalTime();
     int getDeadAnimalAmount();
     int getTotalChildren();
+    Biomes[] getBiomes();
 }
 

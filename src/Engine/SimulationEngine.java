@@ -4,7 +4,7 @@ import Components.Grass;
 import Map.IWorldMap;
 import Components.Vector2d;
 import MapParameters.MapParameters;
-import Map.Biome;
+import Map.Biomes;
 
 import java.util.*;
 
@@ -26,11 +26,9 @@ public class SimulationEngine implements IEngine {
             else return o1.compareTo(o2);
         }
     });
-    Biome jungle;
-    Biome step;
+    Biomes[] biomes = new Biomes[2];
 
-
-    public SimulationEngine(IWorldMap iWorldMap, ArrayList<Vector2d> positions, MapParameters mapParameters){
+    public SimulationEngine(IWorldMap iWorldMap, ArrayList<Vector2d> positions, MapParameters mapParameters, Vector2d[][] biomesRestriction){
         this.iWorldMap = iWorldMap;
         this.startEnergy = mapParameters.getStartEnergy();
         this.grassEnergy = mapParameters.getPlantEnergy();
@@ -55,8 +53,10 @@ public class SimulationEngine implements IEngine {
             animals.add(animal);
         }
 
-        jungle = new Biome(mapParameters.getJungleLower(),mapParameters.getJungleHigher(),iWorldMap);
-        step = new Biome(mapParameters.getMapLower(), mapParameters.getMapHigher(), mapParameters.getJungleLower(), mapParameters.getJungleHigher(), iWorldMap);
+        biomes = new Biomes[biomesRestriction.length];
+        for(int i=0; i< biomes.length;i++){
+            biomes[i] = new Biomes(biomesRestriction[i][0],biomesRestriction[i][1],biomesRestriction[i][2],biomesRestriction[i][3],iWorldMap);
+        }
     }
 
     @Override
@@ -69,7 +69,7 @@ public class SimulationEngine implements IEngine {
 
         grassEat();
         animalReproduction(SuspiciouslyMultiplicationPosition, actualEpoch,keepChildren);
-        grassReproduction(1);
+        grassReproduction();
     }
 
     private String genotypeToString(short[] genotype){
@@ -132,21 +132,24 @@ public class SimulationEngine implements IEngine {
     private void grassEat(){
         totalAnimalEnergy = 0;
         for (Animal animal : animals){
-            if(iWorldMap.getJungleGrass().containsKey(animal.getPosition())){
+            if(iWorldMap.getGrass().containsKey(animal.getPosition())){
+                for(int i=0; i< biomes.length; i++){
+                    if(biomes[i].containPosition(animal.getPosition())) {
+                        biomes[i].removeGrass(animal.getPosition());
+                        break;
+                    }
+                }
+
                 iWorldMap.eatGrass(animal.getPosition(),grassEnergy);
                 iWorldMap.removeGrass(animal.getPosition());
 
-            }
-            else if(iWorldMap.getStepGrass().containsKey(animal.getPosition())){
-                iWorldMap.eatGrass(animal.getPosition(),grassEnergy);
-                iWorldMap.removeGrass(animal.getPosition());
             }
             totalAnimalEnergy += animal.getEnergy();
         }
     }
     private void animalReproduction(HashSet<Vector2d> SuspiciouslyMultiplicationPosition,int actualEpoch,boolean keepChildren){
         for (Vector2d position : SuspiciouslyMultiplicationPosition) {
-            CreateAnimal createAnimal = new CreateAnimal(iWorldMap.getAnimals().get(position),iWorldMap,position,startEnergy,actualEpoch);
+            CreateAnimal createAnimal = new CreateAnimal(iWorldMap.getAnimals().get(position),iWorldMap,position,startEnergy,actualEpoch, this);
 
             ArrayList<Animal> animal = createAnimal.createChild();
             if(animal != null) {
@@ -165,13 +168,11 @@ public class SimulationEngine implements IEngine {
             }
         }
     }
-    private void grassReproduction(int grassCount){
-        //iWorldMap.addStepGrass(grassCount);
-        //iWorldMap.addJungleGrass(grassCount);
-       Vector2d pos = jungle.addGrass();
-       if(pos != null) iWorldMap.getJungleGrass().put(pos,new Grass(pos));
-       Vector2d pos2 = step.addGrass();
-       if(pos2 != null) iWorldMap.getStepGrass().put(pos2,new Grass(pos2));
+    private void grassReproduction(){
+        for(int i=0; i< biomes.length; i++){
+            Vector2d pos = biomes[i].addGrass();
+            if(pos != null) iWorldMap.addGrass(pos);
+        }
     }
 
     private String findDominantGenotype(){
@@ -196,4 +197,5 @@ public class SimulationEngine implements IEngine {
     public int getDeadAnimalTime() {return deadAnimalTime;}
     public int getDeadAnimalAmount() {return deadAnimalAmount;}
     public int getTotalChildren() {return totalChildren;}
+    public Biomes[] getBiomes() {return biomes != null ? biomes : new Biomes[0];}
 }

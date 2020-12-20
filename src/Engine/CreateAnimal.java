@@ -12,13 +12,15 @@ public class CreateAnimal {
     private Vector2d position;
     private int startEnergy;
     private int actualEpoch;
+    private IEngine engine;
 
-    public CreateAnimal(ArrayList<Animal> animalArray, IWorldMap iWorldMap, Vector2d position, int startEnergy, int actualEpoch) {
+    public CreateAnimal(ArrayList<Animal> animalArray, IWorldMap iWorldMap, Vector2d position, int startEnergy, int actualEpoch, IEngine engine) {
         this.iWorldMap = iWorldMap;
         this.animalArray = animalArray;
         this.position = position;
         this.startEnergy = startEnergy;
         this.actualEpoch = actualEpoch;
+        this.engine = engine;
     }
 
     public ArrayList<Animal> createChild() {
@@ -68,8 +70,15 @@ public class CreateAnimal {
             if (x == 0 && y == 0) y = 1;
             Vector2d position2 = position.add(new Vector2d(x, y));
             animal = new Animal(iWorldMap, position2, animal1.getEnergy() / 4 + animal2.getEnergy() / 4, actualEpoch, true);
-            if (iWorldMap.getJungleGrass().containsKey(position2)) iWorldMap.getJungleGrass().remove(position2);
-            if (iWorldMap.getStepGrass().containsKey(position2)) iWorldMap.getStepGrass().remove(position2);
+            if (iWorldMap.getGrass().containsKey(position2)) {
+                iWorldMap.removeGrass(position2);
+                for(int i=0; i<engine.getBiomes().length; i++){
+                    if(engine.getBiomes()[i].containPosition(position2)) {
+                        engine.getBiomes()[i].removeGrass(position2);
+                        break;
+                    }
+                }
+            }
         }
 
         animal1.subtractEnergy(animal1.getEnergy() / 4);
