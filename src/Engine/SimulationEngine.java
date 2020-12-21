@@ -1,13 +1,11 @@
 package Engine;
-import Components.Animal;
-import Map.IWorldMap;
-import Components.Vector2d;
+
+import Elements.*;
 import MapParameters.MapParameters;
-import Map.Biomes;
 
 import java.util.*;
 
-public class SimulationEngine implements IEngine {
+public class SimulationEngine extends AbstractGenotype implements IEngine, IGenotypeConverter {
 
     private final IWorldMap iWorldMap;
     private final List<Animal> animals = new ArrayList<>();
@@ -22,7 +20,7 @@ public class SimulationEngine implements IEngine {
         if (o1.equals(o2)) return 0;
         else return o1.compareTo(o2);
     });
-    Biomes[] biomes;
+    protected Biomes[] biomes;
 
     public SimulationEngine(IWorldMap iWorldMap, ArrayList<Vector2d> positions, MapParameters mapParameters, Vector2d[][] biomesRestriction){
         this.iWorldMap = iWorldMap;
@@ -31,20 +29,15 @@ public class SimulationEngine implements IEngine {
         this.moveEnergy = mapParameters.getMoveEnergy();
 
         for (Vector2d pos : positions) {
-            Animal animal = new Animal(iWorldMap,pos, startEnergy,0,false);
+            Animal animal = new Animal(iWorldMap,pos, startEnergy,0);
 
             // Create random genotype
-            short[] genotype = new short[32];
-            for(int i=0; i<32; i++){
-                int kind =  new Random().nextInt(8);
-                genotype[i] = (short) kind;
-            }
+            short[] genotype = createGenotype(null,null);
 
             // Check the correctness of the genotype
-            Arrays.sort(genotype);
-            if(!checkGenotypeValidation(genotype)) repairGenotype(genotype);
+            if(incorrectGenotype(genotype)) repairGenotype(genotype);
             animal.setGenotype(genotype);
-            String tmp = animal.getStringGenotype();
+            String tmp = genotypeToString(genotype);
             if(allGenotypes.containsKey(tmp)) allGenotypes.put(tmp, allGenotypes.get(tmp) + 1);
             else allGenotypes.put(tmp,1);
 
@@ -68,10 +61,10 @@ public class SimulationEngine implements IEngine {
         totalAnimalEnergy = 0;
         for (Animal animal : animals) {
             Vector2d position = animal.getPosition();
-            for (Biomes biome : biomes) {
-                if (biome.containPosition(position)) {
+            for (Biomes biom : biomes) {
+                if (biom.containPosition(position)) {
                     iWorldMap.giveGrassAnimal(position, grassEnergy);
-                    biome.removeGrass(position);
+                    biom.removeGrass(position);
                     break;
                 }
             }
@@ -92,37 +85,18 @@ public class SimulationEngine implements IEngine {
                 deadAnimalTime += actualEpoch - animal.getBornEpoch();
                 deadAnimalAmount += 1;
 
-                String tmp = animal.getStringGenotype();
+                String tmp = genotypeToString(animal.getGenotype());
                 if(allGenotypes.get(tmp) != null && allGenotypes.get(tmp) > 1 && !allEpoch) allGenotypes.put(tmp,allGenotypes.get(tmp) -1);
                 else if(!allEpoch) allGenotypes.remove(tmp);
 
-                if(animal.getCopulationProduct() && !allEpoch) totalChildren -= 1;
+                if(animal.getIsChild() && !allEpoch) totalChildren -= 1;
                 animal.positionChanged(animal, null);
                 animal.removeObserver(animal);
                 iterator.remove();
             }
         }
     }
-    private boolean checkGenotypeValidation(short[] genotype){
-        short actualGene = 0;
-        for(int i=0; i<32; i++){
-            if(actualGene == genotype[i]) actualGene +=1;
-        }
-        return actualGene == 8;
-    }
-    private void repairGenotype(short[] genotype){
-        int[] AreAllGenotype = new int [] {0,0,0,0,0,0,0,0};
-        for(int i=0; i<32; i++) AreAllGenotype[genotype[i]] += 1;
 
-        for(int i=0; i<8; i++){
-            if(AreAllGenotype[i] == 0){
-                int replace = new Random().nextInt(32);
-                while(AreAllGenotype[genotype[replace]] < 2) replace = new Random().nextInt(32);
-                genotype[replace] = (short) i;
-            }
-        }
-        Arrays.sort(genotype);
-    }
     private HashSet<Vector2d> moveAnimals(){
         HashSet<Vector2d> SuspiciouslyMultiplicationPosition = new HashSet<>();
         for (Animal animal : animals){
@@ -132,26 +106,32 @@ public class SimulationEngine implements IEngine {
         }
         return SuspiciouslyMultiplicationPosition;
     }
+    
     private void animalReproduction(HashSet<Vector2d> suspectReproducePositions,int actualEpoch,boolean keepChildren){
         for (Vector2d position : suspectReproducePositions) {
-            CreateAnimal createAnimal = new CreateAnimal(iWorldMap.getAnimals().get(position),iWorldMap,position,startEnergy,actualEpoch, this);
-            ArrayList<Animal> animal = createAnimal.createChild();
-            if(animal == null) continue;
+            MultiplyAnimal multiplyAnimal = new MultiplyAnimal(iWorldMap.getAnimals().get(position),iWorldMap,position,startEnergy,actualEpoch, this);
+            Animal animal = multiplyAnimal.createChild(keepChildren);
+            if(animal != null) {
+                animals.add(animal);
 
-            animals.add(animal.get(0));
-            String tmp = animal.get(0).getStringGenotype();
-            if(allGenotypes.containsKey(tmp)) allGenotypes.put(tmp,allGenotypes.get(tmp)+1);
-            else allGenotypes.put(tmp,1);
-
-            iWorldMap.place(animal.get(0));
-            if(keepChildren) {
-                animal.get(1).addChild(animal.get(0));
-                animal.get(2).addChild(animal.get(0));
+                String tmp = genotypeToString(animal.getGenotype());
+                if(allGenotypes.containsKey(tmp)) allGenotypes.put(tmp,allGenotypes.get(tmp)+1);
+                else allGenotypes.put(tmp,1);
+                totalChildren +=1;
             }
-            totalChildren +=1;
         }
     }
-
+    
+    public short[] createGenotype(Animal animal1, Animal animal2) {
+        short[] genotype = new short[32];
+        for(int i=0; i<32; i++){
+            int kind =  new Random().nextInt(8);
+            genotype[i] = (short) kind;
+        }
+        Arrays.sort(genotype);
+        return genotype;
+    }
+    
     private String findDominantGenotype(){
         int tmpMax = 0;
         String result = "";
@@ -168,19 +148,23 @@ public class SimulationEngine implements IEngine {
     public void clearDominantGenotype() {
         this.allGenotypes.clear();
         for (Animal animal : animals) {
-            if (allGenotypes.containsKey(animal.getStringGenotype()))
-                allGenotypes.put(animal.getStringGenotype(), allGenotypes.get(animal.getStringGenotype()) + 1);
-            else allGenotypes.put(animal.getStringGenotype(), 1);
+            String genotype = genotypeToString(animal.getGenotype());
+            if (allGenotypes.containsKey(genotype))
+                allGenotypes.put(genotype, allGenotypes.get(genotype) + 1);
+            else allGenotypes.put(genotype, 1);
         }
     }
-    public int getAnimalsAmount() {return animals.size(); }
-    public int getAverageAnimalEnergy() {return animals.size() > 0 ? totalAnimalEnergy / animals.size() : 0;}
-    public int getAverageAnimalTime() {return deadAnimalTime > 0 ? deadAnimalTime/deadAnimalAmount : 0;}
-    public double getAverageAnimalChildren() { return animals.size() > 0 ? (double) totalChildren / (animals.size()) : 0;}
-    public String dominantGenotype() { return findDominantGenotype();}
+    
+    public int getAnimalsAmount() { return animals.size(); }
+    public int getAverageAnimalEnergy() { return animals.size() > 0 ? totalAnimalEnergy / animals.size() : 0; }
+    public int getAverageAnimalTime() { return deadAnimalTime > 0 ? deadAnimalTime/deadAnimalAmount : 0; }
+    public double getAverageAnimalChildren() { return animals.size() > 0 ? (double) totalChildren / (animals.size()) : 0; }
+    public String getDominantGenotype() { return findDominantGenotype(); }
     public int getTotalAnimalEnergy() { return totalAnimalEnergy; }
-    public int getDeadAnimalTime() {return deadAnimalTime;}
-    public int getDeadAnimalAmount() {return deadAnimalAmount;}
-    public int getTotalChildren() {return totalChildren;}
-    public Biomes[] getBiomes() {return biomes != null ? biomes : new Biomes[0];}
+    public int getDeadAnimalTime() { return deadAnimalTime; }
+    public int getDeadAnimalAmount() { return deadAnimalAmount; }
+    public int getTotalChildren() { return totalChildren; }
+    public Biomes[] getBiomes() { return biomes != null ? biomes : new Biomes[0]; }
+
+
 }

@@ -4,11 +4,11 @@
             "MapWidth": "30",
             "MapHeight": "30",
 			"JungleRatio": "5",
-			"AnimalsAmount": "40",
+			"AnimalsCount": "40",
 			"StartEnergy": "20",
 			"MoveEnergy": "1",
 			"PlantEnergy": "30",
-			"AmountOfMaps": "1",
+			"AmountOfMaps": "2"
         }
-    },
+    }
 ]

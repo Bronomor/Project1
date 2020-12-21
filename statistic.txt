@@ -1,6 +1,6 @@
-Average animals amount: 0
-Average grass amount: 101
-Average animals energy: 0
-Average dead animal life: 0.047619047619047616
+Average animals amount: 6
+Average grass amount: 56
+Average animals energy: 55
+Average dead animal life: 0.056439942112879886
 Average animal children: 0.0
-Dominant genotype: 
+Dominant genotype: 00111111222223334444555556666677

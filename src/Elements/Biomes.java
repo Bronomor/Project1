@@ -1,6 +1,5 @@
-package Map;
+package Elements;
 
-import Components.Vector2d;
 import java.util.Random;
 
 public class Biomes {

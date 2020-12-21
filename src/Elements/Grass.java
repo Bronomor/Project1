@@ -1,0 +1,12 @@
+package Elements;
+
+public class Grass {
+
+    private final Vector2d grassPosition;
+
+    public Grass(Vector2d position){ this.grassPosition = position; }
+
+    public Vector2d getPosition() { return grassPosition; }
+    @Override
+    public String toString() { return "*"; }
+}

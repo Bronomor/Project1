@@ -3,6 +3,7 @@ package MapParameters;
 import java.io.FileReader;
 import java.io.IOException;
 
+import PopUpWindow.ExceptionWindow;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -12,7 +13,7 @@ public class ReadJSONMapParameters {
 
     private final JSONParser jsonParser = new JSONParser();
 
-    public int[] readParameters()
+    public int[] readParameters() throws Exception
     {
         try (FileReader reader = new FileReader("parameters.json"))
         {
@@ -20,7 +21,13 @@ public class ReadJSONMapParameters {
             JSONArray StageParameters = (JSONArray) obj;
             return parseSettings((JSONObject) StageParameters.get(0));
 
-        } catch (IOException | ParseException e) {
+        } catch (IOException e) {
+            ExceptionWindow exceptionWindow = new ExceptionWindow();
+            exceptionWindow.start("Problem reading parameters.json");
+            e.printStackTrace();
+        }catch (ParseException e){
+            ExceptionWindow exceptionWindow = new ExceptionWindow();
+            exceptionWindow.start("Parse parameters.json problem");
             e.printStackTrace();
         }
         return new int[0];
@@ -32,7 +39,7 @@ public class ReadJSONMapParameters {
         int mapWidth = Integer.parseInt((String) MenuObject.get("MapWidth"));
         int mapHeight = Integer.parseInt((String) MenuObject.get("MapHeight"));
         int jungleRatio = Integer.parseInt((String) MenuObject.get("JungleRatio"));
-        int animalAmount = Integer.parseInt((String) MenuObject.get("AnimalsAmount"));
+        int animalAmount = Integer.parseInt((String) MenuObject.get("AnimalsCount"));
 
         int startEnergy = Integer.parseInt((String) MenuObject.get("StartEnergy"));
         int moveEnergy = Integer.parseInt((String) MenuObject.get("MoveEnergy"));

@@ -1,5 +1,9 @@
 package PopUpWindow;
 
+import Elements.Animal;
+import Engine.IEngine;
+import Elements.IGenotypeConverter;
+import Elements.IWorldMap;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -7,14 +11,12 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import Components.Animal;
-import Engine.IEngine;
-import Map.IWorldMap;
+
 
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class AnimalWindow {
+public class AnimalWindow implements IGenotypeConverter {
 
     static final int WINDOW_WIDTH = 600;
     static final int WINDOW_HEIGHT = 400;
@@ -25,17 +27,12 @@ public class AnimalWindow {
     private int actualEpoch;
     private boolean undead = true;
 
-    Stage stage = new Stage();
-    Text concreteAnimalPosition;
-    Text concreteAnimalOrient;
-    Text nValueText;
-    Text nValue;
-    Text childrenText;
-    Text descendantText;
-    Text deadEpochText;
-    TextField nTextField;
-    Button startSimulation;
-    Text ConcreteAnimalGenotype;
+    private final Stage stage = new Stage();
+    private Text childrenText;
+    private Text descendantText;
+    private Text deadEpochText;
+    private TextField nTextField;
+    private Button startSimulation;
 
     public AnimalWindow(Animal animal, IEngine engine, IWorldMap grassField, int actualEpoch){
         this.animal = animal;
@@ -45,7 +42,7 @@ public class AnimalWindow {
     }
 
     public void showWindow(){
-        Scene scene = new Scene(prepareLayout(animal.getStringGenotype()), WINDOW_WIDTH, WINDOW_HEIGHT);
+        Scene scene = new Scene(prepareLayout(genotypeToString(animal.getGenotype())), WINDOW_WIDTH, WINDOW_HEIGHT);
         stage.setTitle("Animal preferences");
         stage.setScene(scene);
         stage.show();
@@ -53,12 +50,12 @@ public class AnimalWindow {
     }
 
     private VBox prepareLayout(String genotypeString){
-        concreteAnimalPosition = new Text("Animal position: " + animal.getPosition());
-        concreteAnimalOrient = new Text("Animal orientation: " + animal);
-        ConcreteAnimalGenotype = new Text("Animal orientation: " + genotypeString + "\n\n");
+        Text concreteAnimalPosition = new Text("Animal position: " + animal.getPosition());
+        Text concreteAnimalOrient = new Text("Animal orientation: " + animal);
+        Text concreteAnimalGenotype = new Text("Animal orientation: " + genotypeString + "\n\n");
 
-        nValueText = new Text("Are you want to see the animal after N epoch? ");
-        nValue = new Text("If you like, please enter N below: ");
+        Text nValueText = new Text("Are you want to see the animal after N epoch? ");
+        Text nValue = new Text("If you like, please enter N below: ");
         nTextField = new TextField();
         nTextField.setMaxWidth(200);
         startSimulation = new Button("See animal after N epoch");
@@ -70,12 +67,13 @@ public class AnimalWindow {
         deadEpochText = new Text("Animal death Epoch ");
         deadEpochText.setVisible(false);
 
-        VBox components = new VBox(concreteAnimalPosition,concreteAnimalOrient,ConcreteAnimalGenotype,nValueText,nValue,nTextField,startSimulation,childrenText,descendantText,deadEpochText);
+        VBox components = new VBox(concreteAnimalPosition, concreteAnimalOrient, concreteAnimalGenotype, nValueText, nValue,nTextField,startSimulation,childrenText,descendantText,deadEpochText);
         components.setAlignment(Pos.CENTER);
         components.setSpacing(10);
 
         return components;
     }
+
     private void countDescendant(Animal animal,HashSet<Animal> descendant){
         if(animal.getChildren() == null || animal.getChildren().size() <= 0) return;
         else {
@@ -85,6 +83,7 @@ public class AnimalWindow {
             }
         }
     }
+
     private void events(){
         startSimulation.setOnAction(actionEvent -> {
             childrenText.setVisible(true);
@@ -121,8 +120,6 @@ public class AnimalWindow {
         });
     }
 
-    public IEngine getUpdatedEngine() {return engine;}
-    public int getUpdatedEpoch() {return actualEpoch;}
-    public IWorldMap getUpdatedMap() {return grassField;}
+    public int getUpdatedEpoch() { return actualEpoch; }
     public Stage getStage() { return stage; }
 }

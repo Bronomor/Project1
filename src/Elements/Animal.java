@@ -1,6 +1,6 @@
-package Components;
+package Elements;
 
-import Map.IWorldMap;
+import MapParameters.MapDirection;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,15 +17,16 @@ public class Animal implements IPositionChangeObserver {
     private ArrayList<Animal> children = new ArrayList<>();
     private short[] genotype = new short[32];
 
-    private final Boolean copulationProduct;
+    private Boolean isChild = false;
 
-    public Animal(IWorldMap map, Vector2d initialPosition, int energy, int bornEpoch, boolean copulationProduct){
+    public Animal(IWorldMap map, Vector2d initialPosition, int energy, int bornEpoch){
         this.energy = energy;
         this.bornEpoch = bornEpoch;
         this.map = map;
         this.position = initialPosition;
         this.orientation = numberToDirection(new Random().nextInt(8));
-        this.copulationProduct = copulationProduct;
+        if(bornEpoch != 0) this.isChild = true;
+
 
         addObserver((IPositionChangeObserver) map);
     }
@@ -78,43 +79,25 @@ public class Animal implements IPositionChangeObserver {
             default:
                 break;
         }
-        Vector2d positionNew = map.AdjustingPositionToMap(this.position.add(this.orientation.toUnitVector()));
+        Vector2d positionNew = map.adjustingPositionToMap(this.position.add(this.orientation.toUnitVector()));
         this.positionChanged(this, positionNew);
         position = positionNew;
     }
 
-    public void addObserver(IPositionChangeObserver observer){
-        observers.add(observer);
-    }
-    public void removeObserver(IPositionChangeObserver observer){
-        observers.remove(observer);
-    }
-    public void positionChanged(Animal animal, Vector2d newPosition){
-        for(IPositionChangeObserver obs : observers){
-            obs.positionChanged(animal,newPosition);
-        }
-    }
+    public void addObserver(IPositionChangeObserver observer){ observers.add(observer); }
+    public void removeObserver(IPositionChangeObserver observer){ observers.remove(observer); }
+    public void positionChanged(Animal animal, Vector2d newPosition){ for(IPositionChangeObserver obs : observers) obs.positionChanged(animal,newPosition); }
+    public void addChild(Animal animal) { this.children.add(animal); }
+    public void subtractEnergy(int energy) { this.energy -= energy; }
+    public void resetChildren() { this.children = new ArrayList<>(); }
+    public void setGenotype(short[] Genotype) { this.genotype = Genotype; }
+    public void addEnergy(int energy) { this.energy += energy; }
 
-    public void addChild(Animal animal) {this.children.add(animal);}
-    public void subtractEnergy(int energy) {
-        this.energy -= energy;
-    }
-    public void resetChildren() {this.children = new ArrayList<>();}
-    public void setGenotype(short[] Genotype) {this.genotype = Genotype;}
-    public void addEnergy(int energy) {this.energy += energy; }
-
-    public Vector2d getPosition() {
-        return this.position;
-    }
-    public int getEnergy() {return this.energy; }
-    public short[] getGenotype() {return this.genotype;}
-    public String getStringGenotype() {
-        StringBuilder tmp = new StringBuilder();
-        for(int i=0; i<32; i++) tmp.append(this.genotype[i]);
-        return tmp.toString();
-    }
-    public int getBornEpoch() {return bornEpoch;}
-    public ArrayList<Animal> getChildren() {return this.children;}
-    public boolean getCopulationProduct() {return copulationProduct;}
+    public Vector2d getPosition() { return this.position; }
+    public int getEnergy() { return this.energy; }
+    public short[] getGenotype() { return this.genotype; }
+    public int getBornEpoch() { return bornEpoch; }
+    public ArrayList<Animal> getChildren() { return this.children; }
+    public boolean getIsChild() { return isChild; }
 
 }

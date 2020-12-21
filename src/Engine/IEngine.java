@@ -1,31 +1,23 @@
 package Engine;
-import Map.Biomes;
 
-/**
- * The interface responsible for managing the moves of the animals.
- * Assumes that Vector2d and MoveDirection classes are defined.
- *
- * @author apohllo
- *
- */
+import Elements.Biomes;
+
+
 public interface IEngine {
-    /**
-     * Move the animal on the map according to the provided move directions. Every
-     * n-th direction should be sent to the n-th animal on the map.
-     *
-     */
-    void run(int ActualEpoch, boolean keepChildren, boolean allEpoch);
 
+    void run(int ActualEpoch, boolean keepChildren, boolean allEpoch);
     void clearDominantGenotype();
+
     int getAnimalsAmount();
+    double getAverageAnimalChildren();
     int getAverageAnimalEnergy();
     int getAverageAnimalTime();
-    double getAverageAnimalChildren();
-    String dominantGenotype();
-    int getTotalAnimalEnergy();
+    Biomes[] getBiomes();
     int getDeadAnimalTime();
     int getDeadAnimalAmount();
+    String getDominantGenotype();
+    int getTotalAnimalEnergy();
     int getTotalChildren();
-    Biomes[] getBiomes();
+
 }
 

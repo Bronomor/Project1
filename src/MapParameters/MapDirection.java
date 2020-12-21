@@ -1,4 +1,6 @@
-package Components;
+package MapParameters;
+
+import Elements.Vector2d;
 
 public enum MapDirection {
     NORTH,
@@ -13,14 +15,14 @@ public enum MapDirection {
 
     public String toString() {
         return switch (this) {
-            case NORTH -> "Północ";
-            case NORTHEAST -> "Północny wschód";
-            case NORTHWEST -> "Północny zachód";
-            case SOUTH -> "Południe";
-            case SOUTHEAST -> "Południowy wschód";
-            case SOUTHWEST -> "Południowy zachód";
-            case EAST -> "Wschód";
-            case WEST -> "Zachód";
+            case NORTH -> "North";
+            case NORTHEAST -> "North-East";
+            case NORTHWEST -> "North-West";
+            case SOUTH -> "South";
+            case SOUTHEAST -> "South-East";
+            case SOUTHWEST -> "South-West";
+            case EAST -> "East";
+            case WEST -> "West";
         };
     }
 
